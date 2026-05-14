@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>FinCore — Gestor Financiero</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#030307">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <style>
+  /* ═══════════════════════════════════════════
+     TOKENS
+  ═══════════════════════════════════════════ */
+  :root {
+    --bg:          #030307;
+    --panel:       rgba(255,255,255,0.035);
+    --panel-2:     rgba(255,255,255,0.06);
+    --border:      rgba(255,255,255,0.075);
+    --border-hi:   rgba(255,255,255,0.14);
+    --text:        #eeeef8;
+    --muted:       rgba(238,238,248,0.40);
+    --muted2:      rgba(238,238,248,0.60);
+    --cyan:        #00e5ff;
+    --cyan-glow:   rgba(0,229,255,0.30);
+    --cyan-dim:    rgba(0,229,255,0.09);
+    --green:       #00e5a0;
+    --green-glow:  rgba(0,229,160,0.28);
+    --green-dim:   rgba(0,229,160,0.09);
+    --red:         #ff3d68;
+    --red-dim:     rgba(255,61,104,0.10);
+    --gold:        #ffd060;
+    --gold-dim:    rgba(255,208,96,0.09);
+    --sans:        'Outfit', sans-serif;
+    --mono:        'DM Mono', monospace;
+  }
+  body.light {
+    --bg:        #eef1f8;
+    --panel:     rgba(255,255,255,0.90);
+    --panel-2:   rgba(255,255,255,0.99);
+    --border:    rgba(10,10,50,0.09);
+    --border-hi: rgba(10,10,50,0.16);
+    --text:      #07071a;
+    --muted:     rgba(7,7,26,0.44);
+    --muted2:    rgba(7,7,26,0.64);
+    --cyan:      #0055bb;
+    --cyan-glow: rgba(0,85,187,0.15);
+    --cyan-dim:  rgba(0,85,187,0.07);
+    --green:     #009f6b;
+    --green-glow:rgba(0,159,107,0.12);
+    --green-dim: rgba(0,159,107,0.07);
+    --red:       #cc2244;
+    --red-dim:   rgba(204,34,68,0.07);
+    --gold:      #b07800;
+    --gold-dim:  rgba(176,120,0,0.07);
+  }
+
+  /* ═══════════════════════════════════════════
+     RESET
+  ═══════════════════════════════════════════ */
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    transition: background .4s, color .4s;
+  }
+
+  /* ═══════════════════════════════════════════
+     FONDO FUTURISTA
+  ═══════════════════════════════════════════ */
+  #bg {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  }
+  /* Orbs de luz */
+  #bg::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 1000px 700px at 10% -5%,  rgba(0,229,255,0.07) 0%, transparent 55%),
+      radial-gradient(ellipse 800px 800px  at 90% 95%,  rgba(0,229,160,0.05) 0%, transparent 55%),
+      radial-gradient(ellipse 500px 500px  at 55% 50%,  rgba(255,61,104,0.03) 0%, transparent 55%);
+  }
+  /* Grid animado */
+  #bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.024) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.024) 1px, transparent 1px);
+    background-size: 56px 56px;
+    animation: gridMove 28s linear infinite;
+    mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%);
+  }
+  @keyframes gridMove { from{background-position:0 0} to{background-position:56px 56px} }
+  body.light #bg::after { opacity:.12; }
+  body.light #bg::before { opacity:.4; }
+
+  /* ═══════════════════════════════════════════
+     LAYOUT
+  ═══════════════════════════════════════════ */
+  .page {
+    position: relative; z-index: 1;
+    max-width: 1060px; margin: 0 auto;
+    padding: 36px 18px max(110px, calc(env(safe-area-inset-bottom) + 80px));
+  }
+
+  /* ═══════════════════════════════════════════
+     GLASS
+  ═══════════════════════════════════════════ */
+  .glass {
+    background: var(--panel);
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    position: relative; overflow: hidden;
+    transition: border-color .3s, box-shadow .3s, background .4s;
+  }
+  /* Highlight superior */
+  .glass::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.20) 50%, transparent 100%);
+    border-radius: 22px 22px 0 0;
+  }
+  .glass:hover { border-color: var(--border-hi); }
+
+  /* ═══════════════════════════════════════════
+     HEADER
+  ═══════════════════════════════════════════ */
+  .header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 36px;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 10px; }
+  .brand-icon {
+    width: 42px; height: 42px; border-radius: 11px; flex-shrink:0;
+    background: linear-gradient(135deg, var(--cyan) 0%, #006cff 100%);
+    display: flex; align-items: center; justify-content: center; font-size:20px;
+    box-shadow: 0 0 28px var(--cyan-glow), 0 4px 16px rgba(0,0,0,.4);
+  }
+  .brand-name {
+    font-size: 11px; font-weight: 700; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--muted2);
+  }
+  .header h1 {
+    font-size: clamp(28px, 5.5vw, 48px);
+    font-weight: 800; letter-spacing: -.04em; line-height: 1.0;
+    margin-bottom: 6px;
+  }
+  .h1-cyan {
+    background: linear-gradient(90deg, var(--cyan) 0%, var(--green) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    filter: drop-shadow(0 0 18px var(--cyan-glow));
+  }
+  .header-sub { font-size: 13px; color: var(--muted); }
+
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .live-badge {
+    display: flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 10px; font-weight: 400; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--cyan);
+    background: var(--cyan-dim); border: 1px solid rgba(0,229,255,.22);
+    padding: 6px 13px; border-radius: 99px;
+    box-shadow: 0 0 14px var(--cyan-glow);
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--cyan);
+    animation: livePulse 2s ease-in-out infinite;
+  }
+  @keyframes livePulse {
+    0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,255,.6)}
+    50%{opacity:.55;box-shadow:0 0 0 5px rgba(0,229,255,0)}
+  }
+  .theme-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--panel); border: 1px solid var(--border);
+    color: var(--text); border-radius: 12px; padding: 9px 15px;
+    cursor: pointer; font-family: var(--sans); font-size: 12px; font-weight: 600;
+    letter-spacing: .04em; backdrop-filter: blur(16px);
+    transition: background .2s, border-color .2s, transform .15s;
+  }
+  .theme-btn:hover { background: var(--panel-2); border-color: var(--border-hi); transform: translateY(-1px); }
+
+  /* ═══════════════════════════════════════════
+     SUMMARY
+  ═══════════════════════════════════════════ */
+  .summary-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 24px;
+  }
+  .sum-main {
+    grid-column: 1 / -1;
+    padding: 26px 24px 22px;
+    background: linear-gradient(135deg, rgba(0,229,255,.055), rgba(0,229,160,.035));
+    border-color: rgba(0,229,255,.18);
+    box-shadow: 0 0 48px rgba(0,229,255,.07);
+    text-align: center;
+  }
+  .sum-main-label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--cyan); margin-bottom: 10px;
+  }
+  .sum-main-value {
+    font-size: clamp(40px, 9vw, 62px); font-weight: 900;
+    letter-spacing: -.04em; line-height: 1; color: var(--cyan);
+    text-shadow: 0 0 50px var(--cyan-glow);
+    transition: color .4s;
+  }
+  .sum-main-sub { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  .sum-small { padding: 20px 18px; }
+  .sum-s-label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+  .sum-s-value {
+    font-family: var(--mono); font-size: clamp(18px, 4vw, 24px);
+    font-weight: 500; letter-spacing: -.02em; line-height: 1;
+  }
+  .v-red   { color: var(--red);   text-shadow: 0 0 18px rgba(255,61,104,.35); }
+  .v-green { color: var(--green); text-shadow: 0 0 18px var(--green-glow); }
+  body.light .sum-main-value { text-shadow: none; }
+  body.light .v-red, body.light .v-green { text-shadow: none; }
+  body.light .sum-main { box-shadow: none; }
+
+  /* ═══════════════════════════════════════════
+     TIPO DE CAMBIO
+  ═══════════════════════════════════════════ */
+  .tc-wrap { margin-bottom: 28px; }
+  .tc-toggle {
+    display: flex; align-items: center; gap: 7px;
+    background: transparent; border: none; cursor: pointer;
+    color: var(--muted); font-family: var(--mono);
+    font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    padding: 4px 0; transition: color .2s;
+  }
+  .tc-toggle:hover { color: var(--text); }
+  .tc-arrow { display: inline-block; transition: transform .28s cubic-bezier(.34,1.56,.64,1); }
+  .tc-toggle.open .tc-arrow { transform: rotate(180deg); }
+  .tc-body { display: none; margin-top: 10px; padding: 14px 20px; border-radius: 16px; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .tc-body.open { display: flex; }
+  .tc-body label { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .tc-input {
+    background: rgba(255,208,96,.07); border: 1px solid rgba(255,208,96,.22);
+    border-radius: 10px; color: var(--gold); text-align: center;
+    padding: 8px 16px; font-size: 1rem; font-weight: 500; width: 130px;
+    outline: none; font-family: var(--mono);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .tc-input:focus { border-color: rgba(255,208,96,.5); box-shadow: 0 0 0 3px rgba(255,208,96,.08); }
+  .tc-body span { font-size: 12px; color: var(--muted); }
+
+  /* ═══════════════════════════════════════════
+     SECCIÓN
+  ═══════════════════════════════════════════ */
+  .section-label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  }
+  .section-label::after { content:''; flex:1; height:1px; background: var(--border); }
+
+  /* ═══════════════════════════════════════════
+     CAROUSEL
+  ═══════════════════════════════════════════ */
+  .carousel-wrapper { overflow: hidden; width: 100%; padding: 8px 2px 10px; }
+  .carousel-track {
+    display: flex; gap: 20px; touch-action: pan-y;
+    cursor: grab; user-select: none;
+    will-change: transform;
+    transition: transform .38s cubic-bezier(.25,.46,.45,.94);
+    padding: 6px 4px;
+  }
+  .carousel-track.grabbing { cursor: grabbing; transition: none; }
+  .card-unit { flex: 0 0 calc(50% - 10px); min-width: 420px; display: flex; flex-direction: column; gap: 14px; }
+  @media(max-width:860px){ .card-unit { flex:0 0 90vw; min-width:0; } }
+
+  .carousel-controls {
+    display: flex; align-items: center; justify-content: center;
+    gap: 14px; margin-top: 18px;
+  }
+  .dots { display: flex; gap: 7px; }
+  .dot {
+    width: 7px; height: 7px; border-radius: 99px;
+    background: var(--border); border: 1px solid rgba(255,255,255,.1);
+    cursor: pointer; transition: all .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .dot.active { width: 26px; background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 10px var(--cyan-glow); }
+  .arrow-btn {
+    background: var(--panel); border: 1px solid var(--border);
+    color: var(--text); width: 38px; height: 38px; border-radius: 50%;
+    cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(12px);
+    transition: background .2s, border-color .2s, transform .15s;
+  }
+  .arrow-btn:hover { background: var(--cyan-dim); border-color: rgba(0,229,255,.35); transform: scale(1.08); }
+  .arrow-btn:disabled { opacity:.25; cursor: default; transform: none; }
+
+  /* ═══════════════════════════════════════════
+     VISUAL CARD (tarjeta de crédito)
+  ═══════════════════════════════════════════ */
+  .visual-card {
+    width: 100%; aspect-ratio: 1.586/1;
+    border-radius: 22px; padding: 22px 22px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 28px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.06) inset;
+    display: flex; flex-direction: column; justify-content: space-between;
+    transition: transform .3s ease, box-shadow .3s ease;
+  }
+  .visual-card:hover { transform: translateY(-4px) scale(1.01); box-shadow: 0 40px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.10) inset; }
+
+  /* ── Black ── */
+  .card-black {
+    background: linear-gradient(145deg, #141418 0%, #060608 100%);
+    border: 1px solid rgba(255,255,255,.10);
+  }
+  .card-black::before {
+    content:''; position:absolute; top:-50%; right:-25%;
+    width:80%; height:130%;
+    background: radial-gradient(ellipse, rgba(255,255,255,.05) 0%, transparent 60%);
+    pointer-events:none;
+  }
+  .card-black::after {
+    content:''; position:absolute; inset:0;
+    background: repeating-linear-gradient(-30deg, transparent, transparent 18px, rgba(255,255,255,.011) 18px, rgba(255,255,255,.011) 19px);
+    pointer-events:none;
+  }
+  .black-logo {
+    font-family: var(--sans); font-weight: 800; font-size: clamp(16px, 3.5vw, 22px);
+    background: linear-gradient(180deg, #fff 0%, #8888a0 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; z-index:2;
+  }
+  .black-badge {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .26em;
+    color: rgba(200,200,220,.5); z-index:2;
+  }
+
+  /* ── Tenpo ── */
+  .card-tenpo {
+    background: radial-gradient(circle at top right, #35e38e 0%, #2ecc71 40%, #198c50 100%);
+  }
+  .card-tenpo::before {
+    content:''; position:absolute; top:-25%; right:-15%;
+    width:75%; height:110%;
+    background: radial-gradient(ellipse, rgba(255,255,255,.14) 0%, transparent 60%);
+    pointer-events:none;
+  }
+  .card-tenpo::after {
+    content:''; position:absolute; inset:0;
+    background: repeating-radial-gradient(circle at 92% 8%, transparent 0, transparent 13px, rgba(255,255,255,.05) 14px, rgba(255,255,255,.05) 15px);
+    pointer-events:none;
+  }
+  .tenpo-logo {
+    font-weight: 900; font-style: italic; font-size: clamp(28px, 5.5vw, 36px);
+    color: #fff; letter-spacing: -2px; z-index:2;
+    text-shadow: 0 2px 16px rgba(0,0,0,.2);
+  }
+
+  /* ── Internacional ── */
+  .card-intl {
+    background: linear-gradient(145deg, #0a1220 0%, #0d1c35 50%, #080f1c 100%);
+    border: 1px solid rgba(200,170,60,.24);
+  }
+  .card-intl::before {
+    content:''; position:absolute; top:-45%; right:-20%;
+    width:78%; height:120%;
+    background: radial-gradient(ellipse, rgba(200,160,40,.14) 0%, transparent 65%);
+    pointer-events:none;
+  }
+  .card-intl::after {
+    content:''; position:absolute; inset:0;
+    background: repeating-linear-gradient(-48deg, transparent, transparent 24px, rgba(200,160,40,.02) 24px, rgba(200,160,40,.02) 25px);
+    pointer-events:none;
+  }
+  .intl-logo {
+    font-weight: 800; font-size: clamp(16px, 3.5vw, 22px);
+    background: linear-gradient(180deg, #f0d060 0%, #a07010 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; z-index:2;
+  }
+  .intl-badge {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .22em;
+    color: rgba(200,170,60,.75);
+    background: rgba(180,140,40,.12); border: 1px solid rgba(180,140,40,.26);
+    padding: 3px 9px; border-radius: 4px; z-index:2;
+  }
+  .usd-tag {
+    position:absolute; top:22px; right:22px; z-index:3;
+    font-family: var(--mono); font-size: 11px; font-weight:500;
+    letter-spacing: 3px; color: rgba(200,170,60,.7);
+  }
+
+  /* Chip EMV */
+  .chip {
+    width: 46px; height: 34px; z-index:2; align-self: flex-start;
+    background: linear-gradient(135deg, #dde6f2 0%, #8896ae 100%);
+    border-radius: 6px;
+    box-shadow: inset 0 0 8px rgba(0,0,0,.22), 0 2px 8px rgba(0,0,0,.28);
+    position: relative;
+  }
+  .chip::before { content:''; position:absolute; inset:4px; border:1px solid rgba(0,0,0,.1); border-radius:3px; }
+  .chip::after  { content:''; position:absolute; top:50%; left:0; right:0; height:1px; background:rgba(0,0,0,.08); }
+
+  /* Barra de cupo */
+  .cupo-zone { z-index:5; }
+  .cupo-header {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 10px; font-weight:500;
+    letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(255,255,255,.6); margin-bottom: 6px;
+  }
+  .cupo-header .pct {
+    font-size: 13px; font-weight: 500; letter-spacing: 0;
+    color: rgba(255,255,255,.9);
+  }
+  .cupo-header.gold-h { color: rgba(200,170,60,.7); }
+  .cupo-header.gold-h .pct { color: rgba(240,208,96,.95); }
+  .cupo-track {
+    height: 10px; background: rgba(0,0,0,.3);
+    border-radius: 20px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .cupo-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #facc15, #f87171);
+    border-radius: 20px;
+    transition: width .65s cubic-bezier(.34,1.56,.64,1);
+    box-shadow: 0 0 10px rgba(250,204,21,.4);
+  }
+  .cupo-fill.cf-black { background: linear-gradient(90deg, #8898b8, #dde6f2); box-shadow: none; }
+  .cupo-fill.cf-tenpo { background: linear-gradient(90deg, rgba(255,255,255,.6), rgba(255,255,255,.95)); box-shadow: none; }
+  .cupo-fill.cf-gold  { background: linear-gradient(90deg, #b8860b, #f0d060); box-shadow: 0 0 8px rgba(240,208,96,.4); }
+
+  /* Inputs dentro de la tarjeta */
+  .card-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; z-index:5; }
+  .cinput-g label {
+    display: block;
+    font-family: var(--mono); font-size: 9px; font-weight:500;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: rgba(255,255,255,.55); margin-bottom: 4px;
+  }
+  .cinput-g input {
+    width: 100%; background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.14); border-radius: 10px;
+    color: #fff; padding: 9px 8px;
+    font-size: 17px; font-weight: 800;
+    outline: none; font-family: 'Outfit', sans-serif;
+    -webkit-appearance: none; appearance: none;
+    transition: border-color .2s, background .2s;
+    letter-spacing: -.02em;
+  }
+  .cinput-g input:focus { border-color: rgba(255,255,255,.32); background: rgba(255,255,255,.16); }
+
+  /* ═══════════════════════════════════════════
+     INFO PANEL
+  ═══════════════════════════════════════════ */
+  .info-panel { padding: 20px 22px; }
+
+  .info-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .info-lbl {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .info-inp {
+    background: rgba(0,0,0,.18); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--cyan); text-align: right;
+    padding: 10px 12px; font-size: 17px; font-weight: 800;
+    width: 155px; outline: none; font-family: 'Outfit', sans-serif;
+    -webkit-appearance: none; appearance: none; letter-spacing: -.02em;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .info-inp:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-dim); }
+  .info-inp.i-gold { color: var(--gold); }
+  .info-inp.i-gold:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-dim); }
+
+  .prog-bar { height: 4px; background: rgba(255,255,255,.06); border-radius: 99px; overflow: hidden; margin: 16px 0; }
+  .prog-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #006cff, var(--cyan));
+    border-radius: 99px; transition: width .5s ease;
+    box-shadow: 0 0 7px var(--cyan-glow);
+  }
+  .prog-fill.pf-gold { background: linear-gradient(90deg, #a07010, var(--gold)); box-shadow: 0 0 7px rgba(255,208,96,.4); }
+  body.light .prog-fill, body.light .prog-fill.pf-gold { box-shadow: none; }
+
+  .bottom-stats { display: flex; align-items: center; justify-content: space-between; }
+  .mini-stat span {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;
+  }
+  .mini-stat b { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; letter-spacing: -.02em; }
+  .needed { color: var(--red); text-shadow: 0 0 10px rgba(255,61,104,.3); }
+  .ready  { color: var(--green); text-shadow: 0 0 10px var(--green-glow); }
+  body.light .needed, body.light .ready { text-shadow: none; }
+
+  .status-ok {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+    color: var(--green); background: var(--green-dim);
+    border: 1px solid rgba(0,229,160,.22); padding: 5px 12px; border-radius: 99px;
+    animation: statusBlink 3s ease-in-out infinite;
+  }
+  @keyframes statusBlink { 0%,100%{opacity:1}50%{opacity:.6} }
+
+  /* Conversión CLP */
+  .conv-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 14px; padding-top: 14px;
+    border-top: 1px solid rgba(180,140,40,.12);
+  }
+  .conv-lbl {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .12em;
+    text-transform: uppercase; color: rgba(180,140,40,.55);
+  }
+  .conv-val { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 800; color: var(--gold); letter-spacing: -.02em; }
+
+  /* ═══════════════════════════════════════════
+     LOADING
+  ═══════════════════════════════════════════ */
+  #loading {
+    position: fixed; inset:0; z-index:100;
+    display: flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+    background: var(--bg);
+    transition: opacity .5s ease;
+  }
+  .spin-ring {
+    width: 44px; height: 44px;
+    border: 2px solid rgba(0,229,255,.08); border-top-color: var(--cyan);
+    border-radius: 50%; animation: spin .72s linear infinite;
+    box-shadow: 0 0 28px var(--cyan-glow);
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .load-txt {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .2em;
+    text-transform: uppercase; color: rgba(0,229,255,.45);
+    animation: blink 1.6s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
+
+  /* ═══════════════════════════════════════════
+     TOAST
+  ═══════════════════════════════════════════ */
+  .toast {
+    position: fixed; bottom:26px; right:22px; z-index:9999;
+    background: linear-gradient(135deg, rgba(0,229,160,.12), rgba(0,108,255,.10));
+    border: 1px solid rgba(0,229,160,.24);
+    color: var(--text); padding: 13px 20px; border-radius: 16px;
+    font-size: 13px; font-weight: 600; backdrop-filter: blur(20px);
+    box-shadow: 0 16px 48px rgba(0,0,0,.3);
+    animation: toastIn .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes toastIn { from{opacity:0;transform:translateY(18px) scale(.94)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+  /* ═══════════════════════════════════════════
+     FOOTER
+  ═══════════════════════════════════════════ */
+  .footer {
+    text-align:center; margin-top:56px;
+    font-family: var(--mono); font-size:10px; letter-spacing:.18em;
+    text-transform: uppercase; color: rgba(238,238,248,.10);
+  }
+
+  /* ═══════════════════════════════════════════
+     ANIMACIÓN ENTRADA
+  ═══════════════════════════════════════════ */
+  .fadein {
+    opacity:0; transform:translateY(14px);
+    animation: fadeUp .5s ease forwards;
+  }
+  @keyframes fadeUp { to{opacity:1;transform:translateY(0)} }
+
+  /* ═══════════════════════════════════════════
+     RESPONSIVE PEQUEÑO
+  ═══════════════════════════════════════════ */
+  @media(max-width:480px){
+    .sum-main-value { font-size: 36px; }
+    .info-inp { width: 130px; font-size: 15px; }
+    .mini-stat b { font-size: 1.1rem; }
+    .cinput-g input { font-size: 16px; }
+  }
+
+  /* ═══════════════════════════════════════════
+     SECCIÓN OTRAS DEUDAS
+  ═══════════════════════════════════════════ */
+  .debts-section { margin-top: 40px; }
+
+  .debt-tabs {
+    display: flex; gap: 8px; margin-bottom: 20px;
+  }
+  .debt-tab {
+    flex: 1; padding: 11px 16px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; color: var(--muted2);
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    cursor: pointer; letter-spacing: .02em;
+    transition: all .25s cubic-bezier(.34,1.56,.64,1);
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .debt-tab.active-fija {
+    background: rgba(0,229,255,.10); border-color: rgba(0,229,255,.35);
+    color: var(--cyan); box-shadow: 0 0 22px var(--cyan-glow);
+  }
+  .debt-tab.active-espontanea {
+    background: rgba(255,208,96,.09); border-color: rgba(255,208,96,.35);
+    color: var(--gold); box-shadow: 0 0 22px rgba(255,208,96,.2);
+  }
+  .debt-tab:hover:not(.active-fija):not(.active-espontanea) {
+    background: var(--panel-2); border-color: var(--border-hi);
+    transform: translateY(-1px);
+  }
+
+  /* Formulario de agregar */
+  .debt-add-form {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px;
+    padding: 18px 20px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 18px; backdrop-filter: blur(20px);
+  }
+  .debt-input {
+    background: rgba(255,255,255,.06); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text);
+    padding: 10px 14px; font-size: 14px; font-family: var(--sans);
+    outline: none; flex: 1; min-width: 140px;
+    transition: border-color .2s, box-shadow .2s;
+    -webkit-appearance: none; appearance: none;
+  }
+  .debt-input::placeholder { color: var(--muted); }
+  .debt-input:focus {
+    border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-dim);
+  }
+  .debt-input.gold:focus {
+    border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-dim);
+  }
+  .debt-add-btn {
+    padding: 10px 20px; border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0,229,255,.18), rgba(0,108,255,.18));
+    border: 1px solid rgba(0,229,255,.3);
+    color: var(--cyan); font-family: var(--sans); font-size: 13px; font-weight: 700;
+    cursor: pointer; letter-spacing: .04em; white-space: nowrap;
+    transition: all .22s;
+  }
+  .debt-add-btn:hover {
+    background: linear-gradient(135deg, rgba(0,229,255,.28), rgba(0,108,255,.28));
+    transform: translateY(-1px); box-shadow: 0 4px 18px var(--cyan-glow);
+  }
+  .debt-add-btn.gold-btn {
+    background: linear-gradient(135deg, rgba(255,208,96,.15), rgba(176,120,0,.15));
+    border-color: rgba(255,208,96,.3); color: var(--gold);
+  }
+  .debt-add-btn.gold-btn:hover {
+    background: linear-gradient(135deg, rgba(255,208,96,.28), rgba(176,120,0,.28));
+    box-shadow: 0 4px 18px rgba(255,208,96,.25);
+  }
+
+  /* Lista de deudas */
+  .debt-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .debt-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 16px; backdrop-filter: blur(20px);
+    transition: border-color .25s, background .25s, opacity .3s;
+    animation: fadeUp .35s ease forwards;
+    flex-wrap: nowrap;
+  }
+  .debt-item:hover { border-color: var(--border-hi); background: var(--panel-2); }
+
+  /* En móvil: dos filas — top (nombre+badge) y bottom (monto+fecha+acciones) */
+  @media(max-width:560px){
+    .debt-item {
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 12px 14px;
+    }
+    .drag-handle { order: 0; }
+    .debt-toggle, .debt-item > span[style*="font-size:16px"] { order: 1; }
+    .debt-name {
+      order: 2; flex: 1; min-width: 0;
+      font-size: 13px;
+    }
+    .debt-badge { order: 3; }
+    /* Segunda fila: fecha + monto + acciones */
+    .debt-due-badge { order: 10; margin-left: auto; }
+    .debt-amount    { order: 11; font-size: 13px; }
+    .debt-actions   { order: 12; opacity: 1 !important; margin-left: auto; }
+    /* Separador visual entre filas */
+    .debt-name::after {
+      content: ''; display: block;
+    }
+  }
+
+  /* Toggle switch para deudas fijas */
+  .debt-toggle {
+    position: relative; width: 42px; height: 24px; flex-shrink: 0;
+  }
+  .debt-toggle input { opacity:0; width:0; height:0; }
+  .debt-toggle-slider {
+    position: absolute; cursor: pointer; inset:0;
+    background: rgba(255,255,255,.10); border: 1px solid var(--border);
+    border-radius: 99px; transition: .28s;
+  }
+  .debt-toggle-slider::before {
+    content:''; position:absolute; left:3px; top:50%; transform:translateY(-50%);
+    width:16px; height:16px; background: var(--muted2);
+    border-radius:50%; transition:.28s cubic-bezier(.34,1.56,.64,1);
+  }
+  .debt-toggle input:checked + .debt-toggle-slider {
+    background: rgba(0,229,160,.18); border-color: rgba(0,229,160,.4);
+    box-shadow: 0 0 10px rgba(0,229,160,.25);
+  }
+  .debt-toggle input:checked + .debt-toggle-slider::before {
+    transform: translateX(18px) translateY(-50%); background: var(--green);
+  }
+
+  .debt-name {
+    flex: 1; font-size: 14px; font-weight: 600; letter-spacing: -.01em;
+    color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .debt-amount {
+    font-family: var(--mono); font-size: 15px; font-weight: 500;
+    letter-spacing: -.02em; flex-shrink: 0;
+  }
+  .debt-amount.fija-color { color: var(--cyan); }
+  .debt-amount.espontanea-color { color: var(--gold); }
+
+  .debt-item.pagado .debt-name { color: var(--muted); text-decoration: line-through; }
+  .debt-item.pagado .debt-amount { color: var(--muted) !important; }
+  .debt-item.pagado { opacity: .6; }
+
+  .badge-fija { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,229,255,.2); }
+  .badge-espontanea { background: var(--gold-dim); color: var(--gold); border: 1px solid rgba(255,208,96,.2); }
+
+  .debt-actions {
+    display: flex; gap: 2px; flex-shrink: 0;
+    opacity: 0; transition: opacity .2s;
+  }
+  .debt-item:hover .debt-actions { opacity: 1; }
+  /* Siempre visible en touch (móvil) */
+  @media(hover: none) {
+    .debt-actions { opacity: 1; }
+  }
+
+  .debt-badge {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .12em;
+    text-transform: uppercase; padding: 3px 7px; border-radius: 6px;
+    flex-shrink: 0; white-space: nowrap;
+  }
+  .debt-del-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 12px; line-height:1;
+    padding: 4px 6px; border-radius: 8px; flex-shrink: 0;
+    transition: color .18s, background .18s;
+  }
+  .debt-del-btn:hover { color: var(--red); background: var(--red-dim); }
+
+  /* Botón editar */
+  .debt-edit-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 12px; line-height:1;
+    padding: 4px 6px; border-radius: 8px; flex-shrink: 0;
+    transition: color .18s, background .18s;
+  }
+  .debt-edit-btn:hover { color: var(--cyan); background: var(--cyan-dim); }
+
+  /* Modo edición inline */
+  .debt-item.editing {
+    flex-wrap: wrap;
+    border-color: var(--cyan) !important;
+    box-shadow: 0 0 0 2px var(--cyan-dim);
+    background: var(--panel-2) !important;
+  }
+  .debt-edit-row {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    width: 100%; align-items: center; margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .debt-edit-inp {
+    background: rgba(255,255,255,.07); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text);
+    padding: 8px 12px; font-size: 13px; font-family: var(--sans);
+    outline: none; transition: border-color .2s, box-shadow .2s;
+    -webkit-appearance: none; appearance: none;
+  }
+  .debt-edit-inp:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-dim); }
+  .debt-edit-save {
+    padding: 8px 16px; border-radius: 10px;
+    background: linear-gradient(135deg, rgba(0,229,255,.18), rgba(0,108,255,.18));
+    border: 1px solid rgba(0,229,255,.3);
+    color: var(--cyan); font-family: var(--sans); font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all .2s;
+  }
+  .debt-edit-save:hover { background: linear-gradient(135deg, rgba(0,229,255,.3), rgba(0,108,255,.3)); }
+  .debt-edit-cancel {
+    padding: 8px 14px; border-radius: 10px;
+    background: none; border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--sans); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all .2s;
+  }
+  .debt-edit-cancel:hover { border-color: var(--red); color: var(--red); }
+
+  /* Resumen de deudas */
+  .debt-summary-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+    margin-top: 18px;
+  }
+  .debt-sum-card {
+    padding: 16px 18px;
+    text-align: center;
+  }
+  .debt-sum-label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 7px;
+  }
+  .debt-sum-val {
+    font-family: var(--mono); font-size: clamp(16px,3.5vw,21px);
+    font-weight: 500; letter-spacing: -.02em;
+  }
+
+  /* Total general actualizado */
+  .grand-total-label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--red); margin-bottom: 10px;
+    opacity: .9;
+  }
+  .grand-total-val {
+    font-size: clamp(36px, 8vw, 56px); font-weight: 900;
+    letter-spacing: -.04em; line-height: 1;
+    color: var(--red); text-shadow: 0 0 50px rgba(255,61,104,.35);
+    transition: color .4s;
+  }
+
+  .empty-debts {
+    text-align: center; padding: 32px 20px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  @media(max-width:580px){
+    .debt-summary-grid { grid-template-columns: 1fr 1fr; }
+    .debt-tabs .debt-tab { font-size: 12px; padding: 10px 12px; }
+  }
+  @media(max-width:380px){
+    .debt-summary-grid { grid-template-columns: 1fr; }
+  }
+  /* ═══════════════════════════════════════════
+     RESUMEN TARJETAS (cuadritos)
+  ═══════════════════════════════════════════ */
+  .card-summary-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+    margin-bottom: 28px;
+  }
+  /* Los últimos 2 se expanden cada uno a la mitad de los 3 */
+  .card-summary-grid .card-sum-card:nth-child(4),
+  .card-summary-grid .card-sum-card:nth-child(5) {
+    /* en 3 columnas, cada uno ocupa 1.5 col → usamos subgrid trick vía grid-column */
+  }
+  /* Fila de los totales: 2 tarjetas que se reparten el ancho de 3 */
+  .card-summary-grid > .glass:nth-child(n+4) {
+    /* nada extra; se distribuyen solos en la segunda fila */
+  }
+  .card-sum-card { padding: 16px 18px; }
+  .card-sum-label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 7px;
+  }
+  .card-sum-val {
+    font-family: var(--mono); font-size: clamp(15px,3vw,19px);
+    font-weight: 500; letter-spacing: -.02em; line-height:1.1;
+  }
+  .card-sum-sub {
+    font-size: 10px; color: var(--muted); margin-top: 5px;
+    font-family: var(--mono); letter-spacing:.04em;
+  }
+  @media(max-width:600px){
+    .card-summary-grid { grid-template-columns: 1fr 1fr; }
+    .card-summary-grid > .glass:nth-child(5) { grid-column: 1 / -1; }
+  }
+  @media(max-width:340px){ .card-summary-grid { grid-template-columns: 1fr; } }
+
+  /* ═══════════════════════════════════════════
+     FECHA DEUDA
+  ═══════════════════════════════════════════ */
+  .debt-date {
+    color-scheme: dark;
+    font-family: var(--mono); font-size: 13px;
+  }
+  body.light .debt-date { color-scheme: light; }
+  .debt-due-badge {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .06em;
+    padding: 2px 8px; border-radius: 6px; flex-shrink:0; white-space:nowrap;
+  }
+  .due-ok     { background: rgba(0,229,160,.10); color:var(--green); border:1px solid rgba(0,229,160,.2); }
+  .due-soon   { background: rgba(255,208,96,.10); color:var(--gold);  border:1px solid rgba(255,208,96,.2); }
+  .due-urgent { background: rgba(255,61,104,.12); color:var(--red);   border:1px solid rgba(255,61,104,.2); }
+
+  /* Drag handle */
+  .drag-handle {
+    cursor: grab; color: var(--muted); font-size: 14px;
+    padding: 0 2px; flex-shrink:0; user-select:none;
+    transition: color .2s;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  .debt-item:hover .drag-handle { color: var(--muted2); }
+  .debt-item.drag-over {
+    border-color: var(--cyan) !important;
+    box-shadow: 0 0 0 2px var(--cyan-dim);
+  }
+  .debt-item.dragging { opacity:.4; }
+
+  /* ── Botón ··· menú ── */
+  .debt-actions { position: relative; flex-shrink: 0; }
+  .debt-menu-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 18px; font-weight: 700;
+    padding: 2px 6px; border-radius: 8px; line-height: 1;
+    letter-spacing: 1px; opacity: 0;
+    transition: opacity .2s, color .2s, background .2s;
+  }
+  .debt-item:hover .debt-menu-btn { opacity: 1; }
+  .debt-menu-btn:hover { color: var(--text); background: rgba(255,255,255,.08); }
+  .debt-menu-popup {
+    display: none; position: absolute; right: 0; top: calc(100% + 4px);
+    background: var(--panel-2); border: 1px solid var(--border-hi);
+    border-radius: 12px; padding: 6px; z-index: 99;
+    min-width: 130px; backdrop-filter: blur(24px);
+    box-shadow: 0 8px 28px rgba(0,0,0,.35);
+    flex-direction: column; gap: 2px;
+  }
+  .debt-menu-popup.open { display: flex; }
+  .debt-menu-popup button {
+    background: none; border: none; cursor: pointer;
+    color: var(--text); font-family: var(--sans); font-size: 13px;
+    padding: 8px 12px; border-radius: 8px; text-align: left;
+    transition: background .18s, color .18s; white-space: nowrap;
+  }
+  .debt-menu-popup button:hover { background: rgba(255,255,255,.08); }
+  .debt-menu-popup button.danger { color: var(--red); }
+  .debt-menu-popup button.danger:hover { background: var(--red-dim); }
+
+  /* Números totales tarjetas — más grandes y con font diferente */
+  .card-total-val {
+    font-size: clamp(26px, 5.5vw, 38px);
+    font-weight: 900; letter-spacing: -.04em; line-height: 1;
+    font-family: var(--sans);
+  }
+
+  /* ── Edición inline ── */
+  .debt-item.editing {
+    flex-wrap: wrap;
+    border-color: rgba(0,229,255,.35) !important;
+    box-shadow: 0 0 0 2px var(--cyan-dim);
+  }
+  .debt-edit-row {
+    width: 100%; display: flex; gap: 8px; flex-wrap: wrap;
+    padding-top: 12px; margin-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .debt-edit-inp {
+    background: rgba(255,255,255,.07); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text);
+    padding: 8px 12px; font-size: 13px; font-family: var(--sans);
+    outline: none; transition: border-color .2s, box-shadow .2s;
+    -webkit-appearance: none; appearance: none;
+  }
+  .debt-edit-inp::placeholder { color: var(--muted); }
+  .debt-edit-inp:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-dim); }
+  .debt-edit-save {
+    padding: 8px 16px; border-radius: 10px;
+    background: rgba(0,229,160,.15); border: 1px solid rgba(0,229,160,.3);
+    color: var(--green); font-family: var(--sans); font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all .2s; white-space: nowrap;
+  }
+  .debt-edit-save:hover { background: rgba(0,229,160,.28); }
+  .debt-edit-cancel {
+    padding: 8px 14px; border-radius: 10px;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--sans); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all .2s; white-space: nowrap;
+  }
+  .debt-edit-cancel:hover { border-color: var(--red); color: var(--red); }
+  .debt-edit-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 14px; padding: 4px;
+    border-radius: 8px; flex-shrink: 0;
+    transition: color .2s, background .2s;
+  }
+  .debt-edit-btn:hover { color: var(--cyan); background: var(--cyan-dim); }
+
+  </style>
+</head>
+<body id="b">
+
+<div id="bg"></div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="spin-ring"></div>
+  <div class="load-txt">Iniciando sistema...</div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+<div class="page">
+
+  <!-- ══ HEADER ══ -->
+  <header class="header fadein" style="animation-delay:.04s">
+    <div>
+      <div class="brand">
+        <div class="brand-icon">💳</div>
+        <span class="brand-name">FinCore</span>
+      </div>
+      <h1>Gestor <span class="h1-cyan">Financiero</span></h1>
+      <p class="header-sub">Tarjetas · Deudas fijas · Gastos del mes</p>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><span class="live-dot"></span>En vivo</div>
+      <button class="theme-btn" onclick="toggleT()">
+        <span id="th-icon">🌙</span>
+        <span id="th-lbl">Modo claro</span>
+      </button>
+      <span id="save-indicator" style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;opacity:0;transition:opacity .4s;color:var(--green)"></span>
+    </div>
+  </header>
+
+  <!-- ══ RESUMEN ══ -->
+  <div class="summary-grid fadein" style="animation-delay:.10s">
+    <div class="glass sum-main">
+      <div class="sum-main-label">// Deuda neta por cubrir</div>
+      <div id="total-p" class="sum-main-value">$0</div>
+      <div class="sum-main-sub">Total menos lo que llevas guardado</div>
+    </div>
+    <div class="glass sum-small fadein" style="animation-delay:.15s">
+      <div class="sum-s-label">// Deuda total</div>
+      <div id="total-d" class="sum-s-value v-red">$0</div>
+    </div>
+    <div class="glass sum-small fadein" style="animation-delay:.19s">
+      <div class="sum-s-label">// Guardado</div>
+      <div id="total-saved" class="sum-s-value v-green">$0</div>
+    </div>
+  </div>
+
+  <!-- ══ TIPO DE CAMBIO ══ -->
+  <div class="tc-wrap fadein" style="animation-delay:.23s">
+    <button class="tc-toggle" id="tc-btn" onclick="toggleTC()">
+      ⚙ &nbsp;Tipo de cambio USD / CLP &nbsp;<span class="tc-arrow">▾</span>
+    </button>
+    <div class="glass tc-body" id="tc-body">
+      <label>1 USD =</label>
+      <input type="number" id="tc-input" class="tc-input" value="950" min="1" inputmode="numeric" oninput="onTCChange()">
+      <span>pesos chilenos</span>
+    </div>
+  </div>
+
+  <!-- ══ CARRUSEL ══ -->
+  <div class="fadein" style="animation-delay:.27s">
+
+    <div class="section-label">// tarjetas registradas</div>
+
+    <div class="carousel-wrapper">
+      <div class="carousel-track" id="carousel-track">
+
+        <!-- ═══ TARJETA 1: BLACK CLP ═══ -->
+        <div class="card-unit">
+          <div class="visual-card card-black">
+            <div style="display:flex;justify-content:space-between;align-items:center;z-index:2">
+              <div class="black-logo">Banco de Chile</div>
+              <span class="black-badge">BLACK</span>
+            </div>
+            <div class="chip"></div>
+            <div class="cupo-zone">
+              <div class="cupo-header">
+                <span>Uso del cupo</span>
+                <span id="pct-cupo-black" class="pct">0%</span>
+              </div>
+              <div class="cupo-track">
+                <div id="fill-cupo-black" class="cupo-fill cf-black"></div>
+              </div>
+            </div>
+            <div class="card-inputs">
+              <div class="cinput-g">
+                <label>Gastado</label>
+                <input type="text" id="u-black" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="numeric" oninput="run('black','u')">
+              </div>
+              <div class="cinput-g">
+                <label>Disponible</label>
+                <input type="text" id="a-black" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="numeric" oninput="run('black','a')">
+              </div>
+            </div>
+          </div>
+          <div class="glass info-panel">
+            <div class="info-row">
+              <label class="info-lbl">Fondo Reservado</label>
+              <input type="text" id="r-black" class="info-inp" autocomplete="off" inputmode="numeric" oninput="run('black','r')">
+            </div>
+            <div class="prog-bar"><div id="bar-black" class="prog-fill"></div></div>
+            <div class="bottom-stats">
+              <div class="mini-stat"><span>Falta por recaudar</span><b id="p-black" class="needed">$0</b></div>
+              <div id="status-black"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ TARJETA 2: TENPO ═══ -->
+        <div class="card-unit">
+          <div class="visual-card card-tenpo">
+            <div class="tenpo-logo" style="z-index:2">Tenpo</div>
+            <div class="chip"></div>
+            <div class="cupo-zone">
+              <div class="cupo-header">
+                <span>Uso del cupo</span>
+                <span id="pct-cupo-tenpo" class="pct">0%</span>
+              </div>
+              <div class="cupo-track" style="background:rgba(0,0,0,.22)">
+                <div id="fill-cupo-tenpo" class="cupo-fill cf-tenpo"></div>
+              </div>
+            </div>
+            <div class="card-inputs">
+              <div class="cinput-g">
+                <label>Gastado</label>
+                <input type="text" id="u-tenpo" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="numeric" oninput="run('tenpo','u')">
+              </div>
+              <div class="cinput-g">
+                <label>Disponible</label>
+                <input type="text" id="a-tenpo" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="numeric" oninput="run('tenpo','a')">
+              </div>
+            </div>
+          </div>
+          <div class="glass info-panel">
+            <div class="info-row">
+              <label class="info-lbl">Fondo Reservado</label>
+              <input type="text" id="r-tenpo" class="info-inp" autocomplete="off" inputmode="numeric" oninput="run('tenpo','r')">
+            </div>
+            <div class="prog-bar"><div id="bar-tenpo" class="prog-fill"></div></div>
+            <div class="bottom-stats">
+              <div class="mini-stat"><span>Falta por recaudar</span><b id="p-tenpo" class="needed">$0</b></div>
+              <div id="status-tenpo"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ TARJETA 3: BLACK INTL USD ═══ -->
+        <div class="card-unit">
+          <div class="visual-card card-intl">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;z-index:2">
+              <div class="intl-logo">Banco de Chile</div>
+              <span class="intl-badge">BLACK INTL</span>
+            </div>
+            <div class="usd-tag">USD</div>
+            <div class="chip"></div>
+            <div class="cupo-zone">
+              <div class="cupo-header gold-h">
+                <span>Cupo — USD $1.000</span>
+                <span id="pct-cupo-intl" class="pct">0%</span>
+              </div>
+              <div class="cupo-track" style="border-color:rgba(180,140,40,.16)">
+                <div id="fill-cupo-intl" class="cupo-fill cf-gold"></div>
+              </div>
+            </div>
+            <div class="card-inputs">
+              <div class="cinput-g">
+                <label>Gastado (USD)</label>
+                <input type="text" id="u-intl" inputmode="decimal" placeholder="0.00" autocomplete="off" oninput="runUSD('intl','u')">
+              </div>
+              <div class="cinput-g">
+                <label>Disponible (USD)</label>
+                <input type="text" id="a-intl" inputmode="decimal" placeholder="1000.00" autocomplete="off" oninput="runUSD('intl','a')">
+              </div>
+            </div>
+          </div>
+          <div class="glass info-panel" style="border-color:rgba(180,140,40,.13)">
+            <div class="info-row">
+              <label class="info-lbl">Fondo Reservado (USD)</label>
+              <input type="text" id="r-intl" class="info-inp i-gold" inputmode="decimal" placeholder="0.00" autocomplete="off" oninput="runUSD('intl','r')">
+            </div>
+            <div class="prog-bar"><div id="bar-intl" class="prog-fill pf-gold"></div></div>
+            <div class="bottom-stats">
+              <div class="mini-stat"><span>Falta por recaudar</span><b id="p-intl" class="needed" style="color:var(--gold)">USD 0</b></div>
+              <div id="status-intl"></div>
+            </div>
+            <div class="conv-row">
+              <span class="conv-lbl">≈ Equivalente en CLP</span>
+              <span class="conv-val" id="intl-en-clp">$0</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /track -->
+    </div>
+
+    <!-- Controles -->
+    <div class="carousel-controls">
+      <button class="arrow-btn" id="btn-prev" onclick="slideTo(currentIndex-1)">←</button>
+      <div class="dots" id="carousel-dots"></div>
+      <button class="arrow-btn" id="btn-next" onclick="slideTo(currentIndex+1)">→</button>
+    </div>
+  </div>
+
+  <!-- ══ RESUMEN TARJETAS ══ -->
+  <div class="section-label fadein" style="animation-delay:.29s">// resumen tarjetas</div>
+  <div class="card-summary-grid fadein" style="animation-delay:.30s">
+    <div class="glass card-sum-card">
+      <div class="card-sum-label">// Black CLP — neto</div>
+      <div class="card-sum-val" id="cs-black">$0</div>
+      <div class="card-sum-sub" id="cs-black-sub">Sin deuda</div>
+    </div>
+    <div class="glass card-sum-card">
+      <div class="card-sum-label">// Tenpo — neto</div>
+      <div class="card-sum-val" id="cs-tenpo">$0</div>
+      <div class="card-sum-sub" id="cs-tenpo-sub">Sin deuda</div>
+    </div>
+    <div class="glass card-sum-card">
+      <div class="card-sum-label">// Black INTL — neto</div>
+      <div class="card-sum-val" id="cs-intl">USD 0</div>
+      <div class="card-sum-sub" id="cs-intl-sub">Sin deuda</div>
+    </div>
+  </div>
+
+  <!-- Totales tarjetas -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px" class="fadein" style="animation-delay:.31s">
+    <div class="glass card-sum-card" style="border-color:rgba(220,38,38,.32);background:linear-gradient(135deg,rgba(127,10,10,.22),rgba(60,5,5,.14))">
+      <div class="card-sum-label" style="color:#f87171;letter-spacing:.16em">// Total tarjetas</div>
+      <div class="card-total-val" id="cs-total-d" style="color:#f87171;text-shadow:0 0 24px rgba(248,113,113,.4)">$0</div>
+      <div class="card-sum-sub">Deuda bruta total</div>
+    </div>
+    <div class="glass card-sum-card" style="border-color:rgba(0,229,255,.28);background:linear-gradient(135deg,rgba(0,80,120,.18),rgba(0,30,50,.12))">
+      <div class="card-sum-label" style="color:var(--cyan);letter-spacing:.16em">// Por cubrir</div>
+      <div class="card-total-val" id="cs-total-p" style="color:var(--cyan);text-shadow:0 0 24px var(--cyan-glow)">$0</div>
+      <div class="card-sum-sub">Descontando guardado</div>
+    </div>
+  </div>
+  <div class="debts-section fadein" style="animation-delay:.38s">
+    <div class="section-label" style="margin-top:40px">// otras deudas del mes</div>
+
+    <!-- Tabs tipo (solo para elegir al agregar) -->
+    <div class="debt-tabs">
+      <button class="debt-tab active-fija" id="tab-fija" onclick="switchTab('fija')">
+        📌 &nbsp;Fija mensual
+      </button>
+      <button class="debt-tab" id="tab-espontanea" onclick="switchTab('espontanea')">
+        ⚡ &nbsp;Espontánea
+      </button>
+    </div>
+
+    <!-- Formulario agregar -->
+    <div class="debt-add-form glass" id="debt-form">
+      <input type="text" id="debt-name-input" class="debt-input" placeholder="Nombre de la deuda…" maxlength="40" autocomplete="off"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();$('debt-amount-input').focus();}">
+      <input type="text" id="debt-amount-input" class="debt-input" style="max-width:160px" placeholder="$0" inputmode="numeric" autocomplete="off" oninput="fmtDebtInput(this)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();$('debt-date-input').focus();}">
+      <input type="number" id="debt-date-input" class="debt-input debt-date" style="max-width:110px" placeholder="Día (1-31)" min="1" max="31" inputmode="numeric" title="Día del mes de vencimiento (opcional)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addDebt();}">
+      <button class="debt-add-btn" id="debt-add-btn" onclick="addDebt()">+ Agregar</button>
+    </div>
+
+    <!-- Lista unificada -->
+    <div id="debt-list-all" class="debt-list"></div>
+
+    <!-- Resumen -->
+    <div class="debt-summary-grid" style="margin-top:22px">
+      <div class="glass debt-sum-card">
+        <div class="debt-sum-label">// Fijas activas</div>
+        <div class="debt-sum-val" id="ds-fijas" style="color:var(--cyan)">$0</div>
+      </div>
+      <div class="glass debt-sum-card">
+        <div class="debt-sum-label">// Espontáneos</div>
+        <div class="debt-sum-val" id="ds-espontaneos" style="color:var(--gold)">$0</div>
+      </div>
+      <div class="glass debt-sum-card">
+        <div class="debt-sum-label">// Subtotal otras</div>
+        <div class="debt-sum-val" id="ds-total" style="color:var(--red)">$0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer fadein" style="animation-delay:.35s">FinCore · Gestor Financiero · 2025</div>
+
+</div><!-- /page -->
+</div><!-- /app -->
+
+<script>
+/* ═════════ CONSTANTES ═════════ */
+const CUPO     = { black: 500000, tenpo: 800000 };
+const CUPO_USD = 1000;
+const BIN_ID   = '';
+const API_KEY  = '';
+const BIN_URL  = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+/* ═════════ OTRAS DEUDAS ═════════ */
+let activeTab = 'fija';
+let debts = []; // [{id, tipo, nombre, monto, activa, fecha, orden}]
+let dragSrcId = null;
+
+function switchTab(tab) {
+  activeTab = tab;
+  $('tab-fija').className      = 'debt-tab' + (tab==='fija'?' active-fija':'');
+  $('tab-espontanea').className= 'debt-tab' + (tab==='espontanea'?' active-espontanea':'');
+  $('debt-add-btn').className  = 'debt-add-btn' + (tab==='espontanea'?' gold-btn':'');
+  $('debt-amount-input').className = 'debt-input' + (tab==='espontanea'?' gold':'');
+}
+
+function fmtDebtInput(el) {
+  const raw = el.value.replace(/\D/g,'');
+  el.value = raw ? '$' + parseInt(raw,10).toLocaleString('es-CL') : '';
+}
+function parseDebtAmt(str) { return parseInt((str||'').replace(/\D/g,''),10)||0; }
+
+function addDebt() {
+  const nombre = $('debt-name-input').value.trim();
+  const monto  = parseDebtAmt($('debt-amount-input').value);
+  const fecha  = $('debt-date-input').value || null;
+  if(!nombre || monto<=0) {
+    $('debt-name-input').style.borderColor='var(--red)';
+    setTimeout(()=>{ $('debt-name-input').style.borderColor=''; },1200);
+    return;
+  }
+  debts.push({ id: Date.now(), tipo: activeTab, nombre, monto, activa: true, fecha, orden: debts.length });
+  $('debt-name-input').value = '';
+  $('debt-amount-input').value = '';
+  $('debt-date-input').value = '';
+  renderDebts(); saveDebts(); totals();
+}
+
+function deleteDebt(id) {
+  debts = debts.filter(d => d.id !== id);
+  renderDebts(); saveDebts(); totals();
+}
+
+function toggleDebt(id) {
+  const d = debts.find(d => d.id === id);
+  if(d) d.activa = !d.activa;
+  renderDebts(); saveDebts(); totals();
+}
+
+function dueBadge(dia) {
+  if(!dia) return '';
+  const d = parseInt(dia, 10);
+  if(isNaN(d) || d<1 || d>31) return '';
+  const today = new Date();
+  const todayDay = today.getDate();
+  // Calcular días que faltan (dentro del mes actual o próximo)
+  let diff = d - todayDay;
+  if(diff < 0) {
+    // Ya pasó este mes → buscar próximo mes
+    const nextMonth = new Date(today.getFullYear(), today.getMonth()+1, d);
+    diff = Math.round((nextMonth - today) / 86400000);
+    // Si ya venció este mes, marcar como vencido
+    const thisMonthDue = new Date(today.getFullYear(), today.getMonth(), d);
+    if(thisMonthDue < today) {
+      return `<span class="debt-due-badge due-urgent">Venció día ${d}</span>`;
+    }
+  }
+  if(diff === 0)  return `<span class="debt-due-badge due-urgent">Vence hoy</span>`;
+  if(diff <= 3)   return `<span class="debt-due-badge due-urgent">Vence en ${diff}d (día ${d})</span>`;
+  if(diff <= 7)   return `<span class="debt-due-badge due-soon">Vence en ${diff}d (día ${d})</span>`;
+  return `<span class="debt-due-badge due-ok">Día ${d}</span>`;
+}
+
+function renderDebts() {
+  const container = $('debt-list-all');
+  // Orden: fijas primero, luego espontáneas, dentro de cada grupo por campo orden
+  const sorted = [...debts].sort((a,b)=> {
+    if(a.tipo !== b.tipo) return a.tipo==='fija' ? -1 : 1;
+    return a.orden - b.orden;
+  });
+  if(!sorted.length) {
+    container.innerHTML = '<div class="empty-debts">Sin deudas registradas</div>';
+    return;
+  }
+  container.innerHTML = sorted.map(d => `
+    <div class="debt-item${d.tipo==='fija'&&!d.activa?' pagado':''}"
+         id="ditem-${d.id}" draggable="true"
+         ondragstart="onDragStart(event,${d.id})"
+         ondragover="onDragOver(event,${d.id})"
+         ondrop="onDrop(event,${d.id})"
+         ondragleave="onDragLeave(event)"
+         ondragend="onDragEnd(event)">
+      <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
+      ${d.tipo==='fija' ? `
+      <label class="debt-toggle" title="${d.activa?'Marcar como pagado':'Activar deuda'}">
+        <input type="checkbox" ${d.activa?'checked':''} onchange="toggleDebt(${d.id})">
+        <span class="debt-toggle-slider"></span>
+      </label>` : `<span style="font-size:16px;flex-shrink:0">⚡</span>`}
+      <span class="debt-name">${escHtml(d.nombre)}</span>
+      ${dueBadge(d.fecha)}
+      <span class="debt-badge ${d.tipo==='fija'?'badge-fija':'badge-espontanea'}">${d.tipo==='fija'?'fija':'esp.'}</span>
+      <span class="debt-amount ${d.tipo==='fija'?'fija-color':'espontanea-color'}">${clp(d.monto)}</span>
+      <div class="debt-actions">
+        <button class="debt-edit-btn" onpointerup="editDebt(${d.id})" title="Editar">✏</button>
+        <button class="debt-del-btn"  onpointerup="deleteDebt(${d.id})" title="Eliminar">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function editDebt(id) {
+  // Si ya hay uno en edición, cancelarlo primero
+  const prev = document.querySelector('.debt-item.editing');
+  if(prev) cancelEdit(parseInt(prev.id.replace('ditem-','')));
+
+  const d = debts.find(d => d.id === id);
+  if(!d) return;
+  const item = $('ditem-' + id);
+  item.classList.add('editing');
+
+  // Insertar fila de edición al final del item
+  const row = document.createElement('div');
+  row.className = 'debt-edit-row';
+  row.id = 'edit-row-' + id;
+  row.innerHTML = `
+    <input type="text" class="debt-edit-inp" id="ei-name-${id}" value="${escHtml(d.nombre)}" maxlength="40" placeholder="Nombre" style="flex:1;min-width:120px"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();$('ei-amt-${id}').focus();}
+                 if(event.key==='Escape') cancelEdit(${id});">
+    <input type="text" class="debt-edit-inp" id="ei-amt-${id}" value="${clp(d.monto)}" inputmode="numeric" placeholder="$0" style="max-width:130px"
+      oninput="fmtDebtInput(this)"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();$('ei-day-${id}').focus();}
+                 if(event.key==='Escape') cancelEdit(${id});">
+    <input type="number" class="debt-edit-inp debt-date" id="ei-day-${id}" value="${d.fecha||''}" min="1" max="31" inputmode="numeric" placeholder="Día" style="max-width:80px"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();saveEdit(${id});}
+                 if(event.key==='Escape') cancelEdit(${id});">
+    <button class="debt-edit-save" onclick="saveEdit(${id})">✓ Guardar</button>
+    <button class="debt-edit-cancel" onclick="cancelEdit(${id})">Cancelar</button>
+  `;
+  item.appendChild(row);
+  // Foco al primer campo
+  setTimeout(() => $('ei-name-' + id).focus(), 50);
+}
+
+function cancelEdit(id) {
+  const item = $('ditem-' + id);
+  if(!item) return;
+  item.classList.remove('editing');
+  const row = $('edit-row-' + id);
+  if(row) row.remove();
+}
+
+function saveEdit(id) {
+  const d = debts.find(d => d.id === id);
+  if(!d) return;
+  const nombre = ($('ei-name-' + id).value || '').trim();
+  const monto  = parseDebtAmt($('ei-amt-' + id).value);
+  const dia    = $('ei-day-' + id).value || null;
+  if(!nombre || monto <= 0) {
+    $('ei-name-' + id).style.borderColor = 'var(--red)';
+    setTimeout(() => { $('ei-name-' + id).style.borderColor = ''; }, 1200);
+    return;
+  }
+  d.nombre = nombre;
+  d.monto  = monto;
+  d.fecha  = dia ? parseInt(dia,10) : null;
+  renderDebts(); saveDebts(); totals();
+}
+
+function closeDebtMenus() {
+  document.querySelectorAll('.debt-menu-popup.open').forEach(p => p.classList.remove('open'));
+}
+function toggleDebtMenu(id) {
+  event.stopPropagation();
+  const popup = $('dm-' + id);
+  const isOpen = popup.classList.contains('open');
+  closeDebtMenus();
+  if(!isOpen) popup.classList.add('open');
+}
+document.addEventListener('click', e => {
+  if(!e.target.closest('.debt-actions')) closeDebtMenus();
+});
+
+/* ── Drag & drop reorder ── */
+function onDragStart(e, id) {
+  dragSrcId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  document.getElementById('ditem-'+id).classList.add('dragging');
+}
+function onDragOver(e, id) {
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  if(id !== dragSrcId) document.getElementById('ditem-'+id).classList.add('drag-over');
+}
+function onDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+function onDrop(e, targetId) {
+  e.preventDefault();
+  if(dragSrcId === targetId) return;
+  const src    = debts.find(d=>d.id===dragSrcId);
+  const target = debts.find(d=>d.id===targetId);
+  if(!src||!target) return;
+  // Swap orden
+  const tmp = src.orden; src.orden = target.orden; target.orden = tmp;
+  document.getElementById('ditem-'+targetId).classList.remove('drag-over');
+  renderDebts(); saveDebts();
+}
+function onDragEnd(e) {
+  document.querySelectorAll('.debt-item').forEach(el=>el.classList.remove('dragging','drag-over'));
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function saveDebts() {
+  const json = JSON.stringify(debts);
+  localStorage.setItem('fincore_debts', json);
+  if(window.storage) window.storage.set('fincore_debts', json).catch(()=>{});
+}
+async function loadDebts() {
+  let json = null;
+  try { if(window.storage){ const r=await window.storage.get('fincore_debts'); if(r&&r.value) json=r.value; } } catch(e){}
+  if(!json) json = localStorage.getItem('fincore_debts');
+  if(json) try { debts = JSON.parse(json); } catch(e) { debts=[]; }
+  // Asegurar campo orden en deudas viejas
+  debts.forEach((d,i)=>{ if(d.orden==null) d.orden=i; });
+  renderDebts();
+}
+
+/* ═════════ RESUMEN TARJETAS ═════════ */
+function updateCardSummary() {
+  const bU = parse($('u-black').value), bR = parse($('r-black').value);
+  const tU = parse($('u-tenpo').value), tR = parse($('r-tenpo').value);
+  const iU = parseFloat(($('u-intl').value||'').replace(',','.'))||0;
+  const iR = parseFloat(($('r-intl').value||'').replace(',','.'))||0;
+  const tc = getTC();
+
+  // Neto por tarjeta (gastado - guardado)
+  const bNeto = Math.max(0, bU - bR);
+  const tNeto = Math.max(0, tU - tR);
+  const iNeto = Math.max(0, iU - iR);
+  const iNetoClp = Math.round(iNeto * tc);
+
+  $('cs-black').innerText = clp(bNeto);
+  $('cs-black').style.color = bNeto > 0 ? 'var(--red)' : 'var(--green)';
+  $('cs-black-sub').innerText = bNeto > 0 ? 'Por cubrir' : (bU > 0 ? '✓ Cubierto' : 'Sin deuda');
+
+  $('cs-tenpo').innerText = clp(tNeto);
+  $('cs-tenpo').style.color = tNeto > 0 ? 'var(--red)' : 'var(--green)';
+  $('cs-tenpo-sub').innerText = tNeto > 0 ? 'Por cubrir' : (tU > 0 ? '✓ Cubierto' : 'Sin deuda');
+
+  $('cs-intl').innerText = 'USD ' + iNeto.toFixed(2);
+  $('cs-intl').style.color = iNeto > 0 ? 'var(--red)' : 'var(--green)';
+  $('cs-intl-sub').innerText = iNeto > 0 ? '≈ ' + clp(iNetoClp) : (iU > 0 ? '✓ Cubierto' : 'Sin deuda');
+
+  // Totales solo tarjetas
+  const cardTotalD = bU + tU + Math.round(iU * tc);
+  const cardTotalP = bNeto + tNeto + iNetoClp;
+  $('cs-total-d').innerText = clp(cardTotalD);
+  $('cs-total-p').innerText = clp(cardTotalP);
+}
+
+/* ═════════ UTILS ═════════ */
+const $  = id => document.getElementById(id);
+const parse = v => Number((v||'').replace(/\D/g,''))||0;
+const clp   = v => '$' + Math.max(0,v).toLocaleString('es-CL');
+const getTC = () => parseFloat($('tc-input').value)||950;
+
+/* ═════════ LÓGICA CLP ═════════ */
+function run(c, f) {
+  const uI=$(`u-${c}`), aI=$(`a-${c}`), rI=$(`r-${c}`),
+        pI=$(`p-${c}`), bar=$(`bar-${c}`),
+        bC=$(`fill-cupo-${c}`), pC=$(`pct-cupo-${c}`), st=$(`status-${c}`);
+  let u=parse(uI.value), a=parse(aI.value), r=parse(rI.value);
+  if(f==='u'){ a=CUPO[c]-u; }
+  else if(f==='a'){ u=CUPO[c]-a; }
+  uI.value=clp(u); aI.value=clp(a); rI.value=clp(r);
+  const pCupo=Math.min(100,(u/CUPO[c])*100);
+  bC.style.width=pCupo+'%'; pC.innerText=Math.round(pCupo)+'%';
+  bar.style.width=(u>0?Math.min(100,(r/u)*100):0)+'%';
+  const resta=u-r;
+  if(u>0&&resta<=0){
+    pI.innerText='$0'; pI.className='ready';
+    st.innerHTML='<span class="status-ok">✓ CUBIERTO</span>';
+  } else {
+    pI.innerText=clp(resta); pI.className='needed'; st.innerHTML='';
+  }
+  save(); totals(); updateCardSummary();
+}
+
+/* ═════════ LÓGICA USD ═════════ */
+function runUSD(c, f) {
+  const uI=$(`u-${c}`), aI=$(`a-${c}`), rI=$(`r-${c}`),
+        pI=$(`p-${c}`), bar=$(`bar-${c}`),
+        bC=$(`fill-cupo-${c}`), pC=$(`pct-cupo-${c}`), st=$(`status-${c}`);
+  let u=parseFloat((uI.value||'').replace(',','.'))||0,
+      a=parseFloat((aI.value||'').replace(',','.'))||0,
+      r=parseFloat((rI.value||'').replace(',','.'))||0;
+  if(f==='u'){ aI.value=(Math.max(0,CUPO_USD-u)).toFixed(2); }
+  else if(f==='a'){ u=Math.max(0,CUPO_USD-a); uI.value=u.toFixed(2); }
+  const pCupo=Math.min(100,(u/CUPO_USD)*100);
+  bC.style.width=pCupo+'%'; pC.innerText=Math.round(pCupo)+'%';
+  bar.style.width=(u>0?Math.min(100,(r/u)*100):0)+'%';
+  const resta=u-r;
+  if(u>0&&resta<=0){
+    pI.innerText='USD 0'; pI.className='ready'; pI.style.color='var(--green)';
+    st.innerHTML='<span class="status-ok">✓ CUBIERTO</span>';
+  } else {
+    pI.innerText='USD '+Math.max(0,resta).toFixed(2);
+    pI.className='needed'; pI.style.color='var(--gold)'; st.innerHTML='';
+  }
+  $('intl-en-clp').innerText=clp(Math.round(u*getTC()));
+  save(); totals(); updateCardSummary();
+}
+
+function onTCChange(){
+  const u=parseFloat(($('u-intl').value||'').replace(',','.'))||0;
+  $('intl-en-clp').innerText=clp(Math.round(u*getTC()));
+  localStorage.setItem('tc_usd',String(getTC()));
+  totals(); updateCardSummary();
+}
+
+/* ═════════ TOTALES ═════════ */
+function totals(){
+  let td=0, tp=0, ts=0;
+  ['black','tenpo'].forEach(c=>{
+    const u=parse($(`u-${c}`).value);
+    const r=parse($(`r-${c}`).value);
+    td+=u; ts+=r; if((u-r)>0) tp+=(u-r);
+  });
+  const uI=parseFloat(($('u-intl').value||'').replace(',','.'))||0;
+  const rI=parseFloat(($('r-intl').value||'').replace(',','.'))||0;
+  const iClp=Math.round(uI*getTC());
+  const iRest=Math.round(Math.max(0,uI-rI)*getTC());
+  td+=iClp; if(iRest>0) tp+=iRest;
+  // Sumar otras deudas a los paneles principales
+  const fijaTotal  = debts.filter(d=>d.tipo==='fija'&&d.activa).reduce((s,d)=>s+d.monto,0);
+  const espTotal   = debts.filter(d=>d.tipo==='espontanea').reduce((s,d)=>s+d.monto,0);
+  const otrasTotal = fijaTotal + espTotal;
+  td += otrasTotal;
+  tp += otrasTotal;
+
+  $('total-d').innerText=clp(td);
+  $('total-p').innerText=clp(tp);
+  $('total-saved').innerText=clp(ts);
+
+  // Subtotales del panel de deudas
+  $('ds-fijas').innerText      = clp(fijaTotal);
+  $('ds-espontaneos').innerText= clp(espTotal);
+  $('ds-total').innerText      = clp(otrasTotal);
+}
+
+/* ═════════ PERSISTENCIA ═════════ */
+let saveTimer = null;
+let saveIndicatorTimer = null;
+
+function showSaveIndicator(ok=true) {
+  let el = document.getElementById('save-indicator');
+  if(!el) return;
+  el.textContent = ok ? '✓ Guardado' : '⚠ Sin conexión — guardado local';
+  el.style.opacity = '1';
+  el.style.color = ok ? 'var(--green)' : 'var(--gold)';
+  clearTimeout(saveIndicatorTimer);
+  saveIndicatorTimer = setTimeout(() => { el.style.opacity = '0'; }, 2500);
+}
+
+function getFullState() {
+  return {
+    cards: {
+      black: { u: parse($('u-black').value), r: parse($('r-black').value) },
+      tenpo: { u: parse($('u-tenpo').value), r: parse($('r-tenpo').value) },
+      intl:  { u: parseFloat(($('u-intl').value||'').replace(',','.'))||0,
+               r: parseFloat(($('r-intl').value||'').replace(',','.'))||0 }
+    },
+    debts: debts,
+    tc: getTC()
+  };
+}
+
+function save() {
+  const state = getFullState();
+  const json  = JSON.stringify(state);
+  // Siempre guardar local primero (instantáneo)
+  localStorage.setItem('fincore_v9', json);
+
+  // Luego intentar nube con debounce
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    let cloudOk = false;
+    if(BIN_ID && API_KEY) {
+      try {
+        const r = await fetch(BIN_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type':'application/json', 'X-Master-Key': API_KEY, 'X-Bin-Versioning':'false' },
+          body: json
+        });
+        cloudOk = r.ok;
+      } catch(e) {}
+    }
+    showSaveIndicator(cloudOk || !BIN_ID);
+  }, 600);
+}
+
+// Alias para compatibilidad con saveDebts() ya existente
+function saveDebts() { save(); }
+
+async function cargarDatos() {
+  let state = null;
+
+  // 1. Intentar nube
+  if(BIN_ID && API_KEY) {
+    try {
+      const r = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': API_KEY } });
+      if(r.ok) { const j = await r.json(); if(j.record) state = j.record; }
+    } catch(e) {}
+  }
+
+  // 2. Local como fallback
+  if(!state) {
+    const l = localStorage.getItem('fincore_v9');
+    if(l) try { state = JSON.parse(l); } catch(e) {}
+  }
+
+  // 3. Formato viejo (wallet_v5) como último recurso
+  if(!state) {
+    const l = localStorage.getItem('wallet_v5');
+    if(l) try { const old = JSON.parse(l); state = { cards: old }; } catch(e) {}
+  }
+
+  return state;
+}
+
+/* ═════════ TEMA ═════════ */
+function toggleT(){
+  const light=$('b').classList.toggle('light');
+  localStorage.setItem('theme',light?'light':'dark');
+  $('th-icon').textContent=light?'☀️':'🌙';
+  $('th-lbl').textContent=light?'Modo oscuro':'Modo claro';
+}
+
+/* ═════════ TC PANEL ═════════ */
+function toggleTC(){
+  $('tc-btn').classList.toggle('open');
+  $('tc-body').classList.toggle('open');
+}
+
+/* ═════════ CARRUSEL ═════════ */
+const track=$('carousel-track');
+const dotsEl=$('carousel-dots');
+const cards=document.querySelectorAll('.card-unit');
+const N=cards.length;
+let currentIndex=0;
+
+cards.forEach((_,i)=>{
+  const d=document.createElement('div');
+  d.className='dot'+(i===0?' active':'');
+  d.onclick=()=>slideTo(i);
+  dotsEl.appendChild(d);
+});
+
+function getW(){ return cards[0].offsetWidth+20; }
+function slideTo(idx){
+  idx=Math.max(0,Math.min(N-1,idx));
+  currentIndex=idx;
+  track.style.transform=`translateX(-${idx*getW()}px)`;
+  document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+  $('btn-prev').disabled=idx===0;
+  $('btn-next').disabled=idx===N-1;
+}
+$('btn-prev').disabled=true;
+window.addEventListener('resize',()=>slideTo(currentIndex));
+
+let sx=0,sy=0,isDrag=false,st0=0,tLock=false;
+function getTr(){ return new WebKitCSSMatrix(window.getComputedStyle(track).transform).m41; }
+const isInp=e=>['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName);
+
+track.addEventListener('mousedown',e=>{ if(isInp(e))return; isDrag=true; sx=e.clientX; st0=getTr(); track.classList.add('grabbing'); });
+track.addEventListener('mousemove',e=>{ if(!isDrag)return; track.style.transform=`translateX(${st0+e.clientX-sx}px)`; });
+track.addEventListener('mouseup',e=>{ if(!isDrag)return; isDrag=false; track.classList.remove('grabbing'); const dx=e.clientX-sx,t=getW()*.25; if(dx<-t)slideTo(currentIndex+1); else if(dx>t)slideTo(currentIndex-1); else slideTo(currentIndex); });
+track.addEventListener('mouseleave',e=>{ if(!isDrag)return; isDrag=false; track.classList.remove('grabbing'); slideTo(currentIndex); });
+
+track.addEventListener('touchstart',e=>{ if(isInp(e)||e.target.closest('.info-panel'))return; sx=e.touches[0].clientX; sy=e.touches[0].clientY; st0=getTr(); tLock=false; track.classList.add('grabbing'); },{passive:true});
+track.addEventListener('touchmove',e=>{
+  if(e.target.closest('.info-panel'))return;
+  const dx=e.touches[0].clientX-sx, dy=e.touches[0].clientY-sy;
+  if(!tLock){ if(Math.abs(dy)>Math.abs(dx)+5){track.classList.remove('grabbing');return;} tLock=true; }
+  track.style.transform=`translateX(${st0+dx}px)`;
+},{passive:true});
+track.addEventListener('touchend',e=>{
+  track.classList.remove('grabbing');
+  if(e.target.closest('.info-panel'))return;
+  const dx=e.changedTouches[0].clientX-sx, t=getW()*.25;
+  if(dx<-t)slideTo(currentIndex+1); else if(dx>t)slideTo(currentIndex-1); else slideTo(currentIndex);
+});
+
+/* ═════════ INIT ═════════ */
+window.onload=async()=>{
+  const light=localStorage.getItem('theme')==='light';
+  if(light){
+    $('b').classList.add('light');
+    $('th-icon').textContent='☀️';
+    $('th-lbl').textContent='Modo oscuro';
+  }
+
+  const s=await cargarDatos();
+  if(s){
+    // Soporte formato nuevo (s.cards) y formato viejo (s.black directo)
+    const cards = s.cards || s;
+    const tc    = s.tc || null;
+    if(tc) { $('tc-input').value = tc; }
+    else { const t=localStorage.getItem('tc_usd'); if(t) $('tc-input').value=t; }
+
+    if(cards.black){ $('u-black').value=clp(cards.black.u); $('r-black').value=clp(cards.black.r); run('black','u'); }
+    if(cards.tenpo){ $('u-tenpo').value=clp(cards.tenpo.u); $('r-tenpo').value=clp(cards.tenpo.r); run('tenpo','u'); }
+    if(cards.intl) { $('u-intl').value=cards.intl.u; $('r-intl').value=cards.intl.r; runUSD('intl','u'); }
+
+    // Cargar deudas desde estado unificado
+    if(s.debts && Array.isArray(s.debts)) {
+      debts = s.debts;
+      debts.forEach((d,i)=>{ if(d.orden==null) d.orden=i; });
+      renderDebts();
+    } else {
+      await loadDebts(); // fallback clave separada
+    }
+  } else {
+    const tc=localStorage.getItem('tc_usd'); if(tc) $('tc-input').value=tc;
+    $('a-black').value=clp(CUPO.black);
+    $('a-tenpo').value=clp(CUPO.tenpo);
+    $('a-intl').value=CUPO_USD.toFixed(2);
+    await loadDebts();
+  }
+
+  totals();
+  updateCardSummary();
+  slideTo(0);
+
+  // Fade out loading
+  const loader=$('loading');
+  loader.style.opacity='0';
+  setTimeout(()=>{ loader.style.display='none'; }, 500);
+  $('app').style.display='block';
+};
+</script>
+</body>
+</html>
