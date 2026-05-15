@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrona Carla Ortega | @matroneaconcarla</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Poppins:wght@300;400;500;600&display=swap');
+
+        :root {
+            --primary: #D4A5B4; /* Rosa suave mate */
+            --secondary: #8B739B; /* Morado suave (basado en el flyer de inyectables) */
+            --accent: #E1C1A3; /* Dorado suave (basado en el flyer online) */
+            --bg: #FAEDF0; /* Fondo rosado muy pálido */
+            --bg-card: #FFFFFF;
+            --text-main: #4A4A4A;
+            --text-light: #7A7A7A;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: var(--bg); 
+            background-image: radial-gradient(circle at top right, rgba(212, 165, 180, 0.1), transparent),
+                              radial-gradient(circle at bottom left, rgba(139, 115, 155, 0.1), transparent);
+            color: var(--text-main); 
+            line-height: 1.6;
+        }
+
+        .container { 
+            max-width: 500px; 
+            margin: 40px auto; 
+            padding: 30px 20px; 
+            background-color: transparent;
+        }
+
+        header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+        }
+
+        .profile-pic-placeholder {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            margin: 0 auto 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2.5rem;
+            box-shadow: 0 8px 20px rgba(212, 165, 180, 0.4);
+            border: 4px solid white;
+        }
+
+        h1 { 
+            font-family: 'Playfair Display', serif; 
+            color: var(--secondary); 
+            font-size: 2.2rem;
+            margin-bottom: 5px; 
+        }
+
+        p.subtitle { 
+            color: var(--primary); 
+            font-weight: 500;
+            font-size: 1.1rem; 
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .description {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin-bottom: 20px;
+        }
+
+        /* Enlaces / Botones */
+        .links { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px; 
+            margin-bottom: 40px; 
+        }
+
+        .btn { 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px; 
+            background-color: var(--bg-card); 
+            color: var(--secondary); 
+            text-decoration: none; 
+            border-radius: 12px; 
+            font-weight: 500; 
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid rgba(212, 165, 180, 0.2);
+            font-size: 1.05rem;
+        }
+
+        .btn:hover { 
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(139, 115, 155, 0.15);
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-icon {
+            margin-right: 10px;
+            font-size: 1.3rem;
+        }
+
+        .btn.calendar {
+            background: linear-gradient(135deg, var(--primary) 0%, #C993A6 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+        .btn.calendar:hover {
+            box-shadow: 0 8px 20px rgba(212, 165, 180, 0.4);
+        }
+
+        /* Secciones de Servicios */
+        .services-section { 
+            background: var(--bg-card); 
+            padding: 30px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04); 
+            margin-bottom: 30px; 
+            position: relative;
+            overflow: hidden;
+        }
+
+        .services-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+        }
+
+        .s-online::before { background-color: var(--primary); }
+        .s-domicilio::before { background-color: var(--secondary); }
+
+        .services-section h2 { 
+            color: var(--secondary); 
+            text-align: center; 
+            font-family: 'Playfair Display', serif; 
+            font-size: 1.6rem;
+            margin-bottom: 25px;
+            font-style: italic;
+        }
+
+        .service-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin: 15px 0; 
+            padding-bottom: 12px; 
+            border-bottom: 1px dashed rgba(212, 165, 180, 0.4); 
+        }
+
+        .service-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .service-name {
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        .service-price { 
+            font-weight: 600; 
+            color: var(--secondary); 
+            background: rgba(212, 165, 180, 0.15);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+        }
+
+        .service-note {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 20px;
+            background: #F9F9F9;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .footer { 
+            text-align: center; 
+            margin-top: 50px; 
+            font-size: 0.85rem; 
+            color: var(--text-light); 
+        }
+
+        /* Responsividad */
+        @media (max-width: 500px) {
+            .container { margin: 0; border-radius: 0; padding: 20px; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="profile-pic-placeholder">
+                🌸
+            </div>
+            <h1>Matrona Carla Ortega</h1>
+            <p class="subtitle">@matroneaconcarla</p>
+            <p class="description">Atención integral y empática. Cuido tu salud sexual, reproductiva y bienestar general.</p>
+        </header>
+        
+        <div class="links">
+            <a href="https://calendar.app.google/2cwK29cTrFyDsDcs8" target="_blank" class="btn calendar">
+                <span class="btn-icon">🗓️</span> Agendar Hora Online
+            </a>
+            <a href="https://wa.me/56923791350" target="_blank" class="btn">
+                <span class="btn-icon">💬</span> Escríbeme por WhatsApp
+            </a>
+            <a href="https://www.instagram.com/matroneaconcarla?igsh=MTd5eW14b2UzcWJnOA==" target="_blank" class="btn">
+                <span class="btn-icon">📷</span> Sígueme en Instagram
+            </a>
+            <a href="https://www.tiktok.com/@matroneaconcarla?lang=es-419" target="_blank" class="btn">
+                <span class="btn-icon">🎵</span> Sígueme en TikTok
+            </a>
+        </div>
+
+        <!-- Servicios Online -->
+        <div class="services-section s-online">
+            <h2>Servicios Online</h2>
+            <div class="service-item">
+                <span class="service-name">Consulta online</span> 
+                <span class="service-price">$8.000</span>
+            </div>
+            <div class="service-item">
+                <span class="service-name">Consulta espontánea</span> 
+                <span class="service-price">$5.000</span>
+            </div>
+            <div class="service-item">
+                <span class="service-name">Emisión de recetas</span> 
+                <span class="service-price">$5.000</span>
+            </div>
+            <div class="service-item">
+                <span class="service-name">Solicitud de exámenes</span> 
+                <span class="service-price">$5.000</span>
+            </div>
+            <div class="service-item">
+                <span class="service-name">Revisión de exámenes</span> 
+                <span class="service-price">$5.000</span>
+            </div>
+        </div>
+
+        <!-- Servicios a Domicilio -->
+        <div class="services-section s-domicilio">
+            <h2>Servicios a Domicilio</h2>
+            <div class="service-note">
+                <strong>Administración de Medicamentos Inyectables</strong><br>
+                Intramusculares (Ej: Neurobionta Complejo B)
+            </div>
+            <div class="service-item">
+                <span class="service-name">Servicio + Medicamento<br><small style="color:var(--text-light); font-size:0.8rem;">Incluye aplicación de 3 dosis</small></span> 
+                <span class="service-price">$25.000</span>
+            </div>
+            <div class="service-item">
+                <span class="service-name">Solo aplicación<br><small style="color:var(--text-light); font-size:0.8rem;">Si ya tienes el medicamento (3 dosis)</small></span> 
+                <span class="service-price">$15.000</span>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2026 Matrona Carla Ortega. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>
